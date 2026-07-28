@@ -1,127 +1,144 @@
-# ASSIGNMENT 18 | NEST.JS FIRST ASSIGNMENT
-Author: mohamed mahmoud abo al magd  
-Group: Node_C45_Mon&Thurs_9:00pm (Online)
-
----
+# ASSIGNMENT 18 | NEST.JS SECOND ASSIGNMET
+**Author:** mohamed mahmoud abo al magd  
+**Group:** Node_C45_Mon&Thurs_9:00pm (Online)
 
 ## Project overview
-A modular NestJS application (TypeScript) built with Mongoose for MongoDB and focused on user and e-commerce related domains. The project uses Nest's modular design and validation pipeline and provides a starting point for building REST APIs with authentication, product, category, brand and order modules.
+A modular NestJS (TypeScript) backend focused on user and e-commerce domains. The app uses Mongoose for MongoDB persistence, JWT-based authentication, file upload integrations (Cloudinary / AWS S3), and a global validation + response pipeline to deliver consistent API behavior.
 
 ### Stack
 - Language(s): TypeScript
 - Framework / runtime: NestJS (v11)
 - Notable libraries:
-  - @nestjs/common, @nestjs/core, @nestjs/platform-express
-  - @nestjs/mongoose, mongoose (MongoDB integration)
+  - @nestjs/* (core, config, mongoose, jwt, platform-express)
+  - mongoose (MongoDB)
+  - class-validator / class-transformer (DTO validation)
   - bcrypt (password hashing)
-  - class-validator / class-transformer (validation & DTOs)
-  - zod (schema validation / parsing)
+  - zod (optional schema parsing/validation)
+  - cloudinary, @aws-sdk/* (file storage integrations)
+  - redis, jsonwebtoken, nodemailer, multer
 
----
-
-## Repository layout
-Important top-level files and folders:
+## What’s included (key files & layout)
 ```
-.env.development               # environment file (dev)
-.env.production                # environment file (prod)
-.gitignore
-package.json                   # scripts, deps, devDeps, jest config
+package.json                       # scripts, dependencies, jest config
 tsconfig.json
-tsconfig.build.json
-nest-cli.json
 src/
-  main.ts                      # application entry (sets ValidationPipe, reads PORT from config)
-  app.module.ts                # root Nest module (module wiring)
-  app.controller.ts            # example controller
-  app.service.ts               # example service
+  main.ts                          # bootstrap: global ValidationPipe, interceptors, static /upload
+  app.module.ts                    # application wiring; imports modules & Mongoose config
   config/
-    config.ts                   # configuration exports (PORT is imported from here)
+    config.ts                      # all runtime env constants (PORT, DB_URI, etc.)
     index.ts
-  model/
-    user.model.ts               # user Mongoose model
-    index.ts
-  common/                      # common decorators, pipes, interfaces, repositories, utils
+  common/
+    interceptor/                   # TransformInterceptor, LanguageInterceptor, WatchInterceptor
+    modules/                       # shared auth modules (SharedAuthenticationModule)
+    service/                       # CloudinaryService and other shared services
   modules/
-    authentication/            # authentication module (auth flows)
-    user/                      # user module
-    product/                   # product module
-    category/                  # category module
-    brand/                     # brand module
-    order/                     # order module
-test/                          # tests and e2e config
+    authentication/                # authentication flows (JWTs, tokens, guards)
+    user/                          # user domain
+    product/                       # product domain
+    category/                      # category domain
+    brand/                         # brand domain
+    order/                         # order domain
+uploads/                            # static uploads served at /upload (created at runtime)
+test/                               # unit + e2e tests
 ```
 
-How it fits together:
-- The application bootstrap is in src/main.ts which creates the Nest app, registers a global ValidationPipe, and starts the server on PORT from configuration.
-- AppModule composes domain modules (authentication, user, product, category, brand, order). Models (e.g., src/model/user.model.ts) provide Mongoose schemas used by module repositories/services.
-- Validation is enforced globally using Nest's ValidationPipe (stopAtFirstError, whitelist, forbidNonWhitelisted).
+## How it fits together
+- AppModule composes domain modules (authentication, user, product, category, brand, order) and registers global services.  
+- MongooseModule.forRootAsync reads DB_URI from configuration and sets up connection lifecycle logs.  
+- src/main.ts sets a global ValidationPipe (stopAtFirstError, whitelist, forbidNonWhitelisted), registers three global interceptors (WatchInterceptor, LanguageInterceptor, TransformInterceptor), enables CORS, and serves uploaded files from ./uploads at the `/upload` route.  
+- Authentication is exposed through dedicated modules and a SharedAuthenticationModule used across the app.
 
----
+## Features (implemented / clearly present)
+- Modular NestJS architecture with domain separation (auth, user, product, category, brand, order).
+- MongoDB persistence via Mongoose with connection lifecycle logging.
+- Global request validation and standardized response wrapping (TransformInterceptor adds `{ message, data }`).
+- Localization header handling via LanguageInterceptor (accept-language defaults to user.lang or `en`).
+- File upload / static serving (express static at `/upload`), plus Cloudinary / AWS S3 client libraries configured for media handling.
+- JWT-based tokens (dependencies and config keys present) and password hashing with bcrypt.
+- Utilities for emailing (nodemailer), caching (redis), and external HTTP requests (axios).
 
-## Key features (inferred from structure & dependencies)
-- Modular NestJS architecture with separated domain modules (authentication, user, product, category, brand, order).
-- MongoDB persistence via Mongoose.
-- Input validation using class-validator / class-transformer and zod available for schema parsing/validation.
-- Password hashing support using bcrypt.
-- Ready-to-run scripts for development, production, and testing.
+## Configuration (environment variables referenced)
+The repository exports many runtime constants from `src/config/config.ts`. Provide these in your environment or an `.env` file:
 
----
+General
+- PORT
 
-## Setup & run (shortest path)
-1. Install dependencies:
+Database / cache
+- DB_URI
+- REDIS_URL
+
+Security / crypto
+- SALT_ROUND
+- ENC_IV_LENGTH
+- ENC_KEY
+
+JWT signatures & expirations
+- USER_ACCESS_TOKEN_SIGNATURE
+- USER_REFRESH_TOKEN_SIGNATURE
+- SYSTEM_ACCESS_TOKEN_SIGNATURE
+- SYSTEM_REFRESH_TOKEN_SIGNATURE
+- ACCESS_TOKEN_EXPIRES_IN
+- REFRESH_TOKEN_EXPIRES_IN
+
+Email / app info
+- APP_EMAIL (EMAIL_APP)
+- APP_EMAIL_PASSWORD (EMAIL_APP_PASSWORD)
+- APPLICATION_NAME
+
+Social / clients
+- FACEBOOK
+- INSTAGRAM
+- TWITTER
+- ORIGINS (comma-separated)
+- CLIENT_IDS (comma-separated)
+
+Note: Several env vars are required by the code paths; missing values may cause runtime failures. Add an `.env.example` listing the above with placeholders.
+
+## Quickstart — from a fresh clone
+Install dependencies:
 ```bash
 npm install
 ```
 
-2. Development:
+Run in development (watch):
 ```bash
 npm run start:dev
 # or
 npm run start
 ```
 
-3. Production build + run:
+Build and run production:
 ```bash
 npm run build
 npm run start:prod
 ```
 
-4. Tests:
+Run tests:
 ```bash
-# unit tests
-npm run test
-
-# e2e tests
-npm run test:e2e
-
-# coverage
-npm run test:cov
+npm run test          # unit tests
+npm run test:e2e      # e2e tests
+npm run test:cov      # coverage
 ```
 
 Scripts available (from package.json):
-- build: nest build
-- start, start:dev, start:prod
-- lint: eslint ... --fix
-- format: prettier --write "src/**/*.ts" "test/**/*.ts"
+- build, start, start:dev, start:debug, start:prod
+- lint, format
 - test, test:watch, test:cov, test:e2e
 
----
+## Observed runtime behavior & entry points
+- HTTP server entry: `src/main.ts` — sets up global pipes/interceptors and starts the app on PORT.
+- App composition: `src/app.module.ts` — imports ConfigModule, MongooseModule.forRootAsync, SharedAuthenticationModule and all domain modules.
+- Static uploads served at `/upload` mapped to `./uploads`.
 
-## Configuration
-- The application reads configuration from src/config (src/config/config.ts is present) and main.ts imports a PORT constant from that config.
-- Environment files included at repo root: .env.development and .env.production — use them to keep environment-specific values outside source.
-- Ensure the config (or environment files) provide the port and any DB connection strings the app needs (the project depends on mongoose).
+## Tests & quality
+- Jest is configured to run TypeScript tests (ts-jest) with test files matching `*.spec.ts`.
+- ESLint + Prettier are present in devDependencies for code quality and formatting.
 
-
----
-
-## Notes for maintainers / next steps
-- Confirm and document required environment variables in src/config/config.ts (PORT and MongoDB connection string), and add an example .env.example if desired.
-- Add API documentation (e.g., Swagger/OpenAPI) if you intend to expose and document endpoints for consumers.
-- Add a short outline in README describing the main endpoints (controllers) and sample requests once controllers are stabilized.
-- Add CONTRIBUTING.md and a short development checklist for common tasks (run, test, lint, build).
-
----
+## Notes & recommended next steps
+- Add `.env.example` and document which env vars are required and which are optional. Use `src/config/config.ts` as the authoritative list.  
+- Add API documentation (Swagger/OpenAPI) to expose routes and DTOs for consumers.  
+- Add CONTRIBUTING.md and a short development checklist (run, test, lint, build).  
+- Consider adding runtime health checks and a Dockerfile / docker-compose for local environment parity.
 
 ## License
-This project is currently marked as "UNLICENSED" in package.json.
+This project is currently set as `UNLICENSED` in package.json.
